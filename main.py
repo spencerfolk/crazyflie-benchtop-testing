@@ -31,7 +31,7 @@ try:
         set_cf_params(scf)
 
         print("Ramping motors...")
-        log_dict = ramp_motors(scf.cf, start_pwm=10000, end_pwm=20000, step=5000, hold_time=5.0, motor_idxs=[0, 1, 2, 3])
+        log_dict = ramp_motors(scf.cf, start_pwm=10000, end_pwm=45000, step=5000, hold_time=5.0, motor_idxs=[0, 1, 2, 3])
 
         print("Closing link...")
         scf.cf.close_link()
