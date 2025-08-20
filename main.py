@@ -12,7 +12,7 @@ import os
 import time
 
 # uri = "usb://0"
-uri = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E7B3')
+uri = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E7B1')
 
 current_datetime = time.strftime("%Y-%m-%d_%H-%M-%S")
 output_path = os.path.join(os.path.dirname(__file__), 'data', 'cf_data', 'rampup_data_'+current_datetime+'.csv')
@@ -31,7 +31,7 @@ try:
         set_cf_params(scf)
 
         print("Ramping motors...")
-        log_dict = ramp_motors(scf.cf, start_pwm=10000, end_pwm=45000, step=5000, hold_time=5.0, motor_idxs=[0, 1, 2, 3])
+        log_dict = ramp_motors(scf.cf, start_pwm=10000, end_pwm=50000, step=5000, hold_time=1.0, motor_idxs=[0, 1, 2, 3])
 
         print("Closing link...")
         scf.cf.close_link()

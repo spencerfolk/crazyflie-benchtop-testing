@@ -48,7 +48,7 @@ def parse_rc_csv(rc_csv, rpm_col='Motor Optical Speed (rad/s)', threshold=1000, 
         rc_csv: path to the CSV file.
         rpm_col: name of the column for motor speed in rad/s.
         threshold: allowable rate of change in rad/s per second to keep (default=50).
-        rpm_min: minimum rpm value to keep (default=250).
+        rpm_min: minimum motor_speed value to keep (default=250).
     """ 
     # Load data
     rc_df = pd.read_csv(rc_csv, index_col=False, on_bad_lines='skip')
@@ -182,7 +182,7 @@ def battery_compensated_motorspeed_model(pwm, voltage, a, b, c):
 
 def fit_battery_compensated_motorspeed_model(pwm, voltage, motorspeed):
     """ 
-    Fit a model that maps pwm and input voltage to RPM. 
+    Fit a model that maps pwm and input voltage to motor_speed. 
 
     Inputs:
         pwm (np array): the 16bit pwm value sent to the motor.
@@ -257,7 +257,7 @@ def plot_speed_mapping_surface(ax, coeffs, pwm_range, voltage_range,
                      use_3d=False, surface=True,
                      pwm_data=None, motorspeed_data=None, voltage_data=None):
     """
-    Plot the RPM model on the provided axis.
+    Plot the motor_speed model on the provided axis.
 
     Parameters:
         ax : matplotlib axis (2D or 3D depending on use_3d)
@@ -278,24 +278,24 @@ def plot_speed_mapping_surface(ax, coeffs, pwm_range, voltage_range,
     PWM, V = np.meshgrid(pwm_vals, voltage_vals)
 
     # Evaluate model (you must have rpm_map(PWM, V, a, b, c) defined elsewhere)
-    RPM = battery_compensated_motorspeed_model(PWM, V, *coeffs)
+    motor_speed = battery_compensated_motorspeed_model(PWM, V, *coeffs)
 
     if use_3d:
         if surface:
-            ax.plot_surface(PWM, V, RPM, color=color, alpha=alpha, edgecolor='none')
+            ax.plot_surface(PWM, V, motor_speed, color=color, alpha=alpha, edgecolor='none')
         else:
-            ax.scatter(PWM.flatten(), V.flatten(), RPM.flatten(), 
+            ax.scatter(PWM.flatten(), V.flatten(), motor_speed.flatten(), 
                        c=color, alpha=alpha, s=10)
         ax.set_xlabel("PWM")
-        ax.set_ylabel("Voltage")
-        ax.set_zlabel("RPM")
+        ax.set_ylabel("Voltage (V)")
+        ax.set_zlabel("Motor Speed (rad/s)")
     else:
-        # Project onto 2D (Voltage collapsed/ignored → just PWM vs RPM at midpoint V)
+        # Project onto 2D (Voltage collapsed/ignored → just PWM vs motor_speed at midpoint V)
         mid_v = np.mean(voltage_range)
         RPM_2D = battery_compensated_motorspeed_model(pwm_vals, mid_v, *coeffs)
         ax.plot(pwm_vals, RPM_2D, color=color, linewidth=2, label="Fitted Model")
         ax.set_xlabel("PWM")
-        ax.set_ylabel("RPM")
+        ax.set_ylabel("Motor Speed (rad/s)")
         ax.legend()
 
     # If data provided, compute R^2 and annotate
@@ -317,7 +317,7 @@ def plot_speed_mapping_surface(ax, coeffs, pwm_range, voltage_range,
 
 def produce_mappings(cf_df, rc_df, num_motors=4):
     """ 
-    Compute the mappings between PWM, RPM, and thrust. 
+    Compute the mappings between PWM, motor_speed, and thrust. 
     Fit y = A x^2 to thrust vs motor speed and plot per experiment ID.
 
     Inputs:
@@ -391,8 +391,8 @@ def produce_mappings(cf_df, rc_df, num_motors=4):
 if __name__ == "__main__":
     
     data_dir = os.path.join(os.path.dirname(__file__), 'data')
-    rc_dir = os.path.join(data_dir, 'thrust_stand_data')
-    cf_dir = os.path.join(data_dir, 'cf_data')
+    rc_dir = os.path.join(data_dir, 'thrust_stand_data_cfbl')
+    cf_dir = os.path.join(data_dir, 'cf_data_cfbl')
 
     cf_csvs = [os.path.join(cf_dir, f) for f in os.listdir(cf_dir) if f.endswith('.csv')]
     rc_csvs = [os.path.join(rc_dir, f) for f in os.listdir(rc_dir) if f.endswith('.csv')]
