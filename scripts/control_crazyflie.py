@@ -121,7 +121,7 @@ def set_up_logging(scf):
 
     return 
 
-def collective_ramp_motors(cf, start_pwm=10000, end_pwm=25000, step=1000, hold_time=1.0):
+def ramp_motors(cf, start_pwm=10000, end_pwm=25000, step=1000, hold_time=1.0, motor_idxs=[0, 1, 2, 3]):
     """
     Slowly ramp all motors from start_pwm to end_pwm, hold each step for hold_time.
 
@@ -131,11 +131,15 @@ def collective_ramp_motors(cf, start_pwm=10000, end_pwm=25000, step=1000, hold_t
         end_pwm (int): the end pwm value for all motors. 
         step (int): the step change in pwm. 
         hold_time (float): how long to hold at each stepped pwm value. 
+        motor_idxs (list): choose which motors to ramp up. 
 
     """
+    motor_pwms = [0, 0, 0, 0]
     pwm = start_pwm
     while pwm <= end_pwm:
-        send_motor_pwm(cf, [pwm]*4, hold_time)
+        for idx in motor_idxs:
+            motor_pwms[idx] = pwm
+        send_motor_pwm(cf, motor_pwms, hold_time)
         pwm += step
     # Return to zero at the end
     cf_stop(cf)
@@ -184,7 +188,7 @@ if __name__=="__main__":
             set_up_logging(scf)
 
             print("Ramping motors...")
-            collective_ramp_motors(scf.cf, start_pwm=15000, end_pwm=30000, step=2000, hold_time=1.0)
+            ramp_motors(scf.cf, start_pwm=15000, end_pwm=30000, step=2000, hold_time=1.0)
 
             print("Closing link...")
             scf.cf.close_link()
