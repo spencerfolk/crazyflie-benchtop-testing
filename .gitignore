@@ -143,3 +143,4 @@ pyrightconfig.json
 
 cache/
 *.csv
+*.yaml
