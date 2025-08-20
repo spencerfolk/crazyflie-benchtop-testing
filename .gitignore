@@ -141,5 +141,5 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
-cache
+cache/
 *.csv
