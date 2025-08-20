@@ -5,10 +5,17 @@ from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.crazyflie.syncLogger import SyncLogger
 from cflib.utils import uri_helper
 
-from scripts.control_crazyflie import set_cf_params, set_up_logging, ramp_motors, cf_stop
+from scripts.control_crazyflie import set_cf_params, ramp_motors, cf_stop
+
+import pandas as pd
+import os
+import time
 
 # uri = "usb://0"
 uri = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E7B3')
+
+current_datetime = time.strftime("%Y-%m-%d_%H-%M-%S")
+output_path = os.path.join(os.path.dirname(__file__), 'data', 'cf_data', 'rampup_data_'+current_datetime+'.csv')
 
 # test_cf_connection(uri)
 # test_tyto_connection(COM_PORT="COM3", baud_rate=115200)
@@ -22,13 +29,16 @@ try:
     with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
 
         set_cf_params(scf)
-        set_up_logging(scf)
 
         print("Ramping motors...")
-        ramp_motors(scf.cf, start_pwm=10000, end_pwm=55000, step=5000, hold_time=3.0, motor_idxs=[1])
+        log_dict = ramp_motors(scf.cf, start_pwm=10000, end_pwm=20000, step=5000, hold_time=5.0, motor_idxs=[0, 1, 2, 3])
 
         print("Closing link...")
         scf.cf.close_link()
+
+        print("Saving data to csv file...")
+        df = pd.DataFrame(log_dict)
+        df.to_csv(output_path, index=False)
 
 except KeyboardInterrupt:
     print("Keyboard interrupt detected, stopping motors and closing...")

@@ -7,6 +7,7 @@ from cflib.utils import uri_helper
 
 import time
 import os
+import numpy as np
 
 """
 Credit: @PratikKunapuli for a lot of this code!
@@ -80,71 +81,69 @@ def cf_stop(cf):
         cf.platform.send_arming_request(False)
         time.sleep(0.1)
 
-    return
-
-def _log_motor_data(timestamp, data, logconf):
-    """ 
-    Callback function for logging the motor data when it is transmitted. 
-
-    Inputs:
-        timestamp (int): the timestamp
-        data (dict): dictionary containing the motor data. 
-        logconf: logging configuration dict. 
-    """
-
-    print("time: ", timestamp, "m1: ", data["motor.m1"], "m2: ", data["motor.m2"], "m3: ", data["motor.m3"], "m4: ", data["motor.m4"])
-
     return 
 
-def set_up_logging(scf):
-    """ 
-    Set up the logging configuration for the Crazyflie. 
-
+def ramp_motors(cf, start_pwm, end_pwm, step, hold_time, motor_idxs=None):
+    """
+    Ramp the motor PWM values and log the responses.
+    
     Inputs:
-        scf (SyncCrazyflie obj): the sync Crazyflie object. 
+    Outputs:
+        log_data (dict): {'timestep': np.array, 'm1': np.array, 'm2': np.array, 'm3': np.array, 'm4': np.array}
     """
 
-    print("Setting up logging...")
-    # Set up logging
-    _lg_motors = LogConfig(name='Motors', period_in_ms=10)
-    _lg_motors.add_variable('motor.m1', 'uint16_t')
-    _lg_motors.add_variable('motor.m2', 'uint16_t')
-    _lg_motors.add_variable('motor.m3', 'uint16_t')
-    _lg_motors.add_variable('motor.m4', 'uint16_t')
+    # Storage for logged data
+    log_data = {
+        'timestep': [],
+        'm1': [],
+        'm2': [],
+        'm3': [],
+        'm4': []
+    }
 
-    # Add the callback to the log config
-    scf.cf.log.add_config(_lg_motors)
-    _lg_motors.data_received_cb.add_callback(_log_motor_data)
-
-    # Start logging
-    _lg_motors.start()
-
-    return 
-
-def ramp_motors(cf, start_pwm=10000, end_pwm=25000, step=1000, hold_time=1.0, motor_idxs=[0, 1, 2, 3]):
-    """
-    Slowly ramp all motors from start_pwm to end_pwm, hold each step for hold_time.
-
-    Inputs:
-        cf (Crazyflie obj): the crazyflie to control.
-        start_pwm (int): the starting pwm value for all motors. 
-        end_pwm (int): the end pwm value for all motors. 
-        step (int): the step change in pwm. 
-        hold_time (float): how long to hold at each stepped pwm value. 
-        motor_idxs (list): choose which motors to ramp up. 
-
-    """
     motor_pwms = [0, 0, 0, 0]
     pwm = start_pwm
-    while pwm <= end_pwm:
-        for idx in motor_idxs:
-            motor_pwms[idx] = pwm
-        send_motor_pwm(cf, motor_pwms, hold_time)
-        pwm += step
-    # Return to zero at the end
-    cf_stop(cf)
 
-    return
+    # Define logging configuration
+    lg = LogConfig(name='MotorLogging', period_in_ms=100)  # log every 100 ms
+    lg.add_variable('motor.m1', 'uint16_t')
+    lg.add_variable('motor.m2', 'uint16_t')
+    lg.add_variable('motor.m3', 'uint16_t')
+    lg.add_variable('motor.m4', 'uint16_t')
+
+    def _log_motor_data(timestamp, data, logconf):
+        """Callback to save motor data into local dict"""
+        
+        print("time: ", timestamp, "m1: ", data["motor.m1"], "m2: ", data["motor.m2"], "m3: ", data["motor.m3"], "m4: ", data["motor.m4"])
+        log_data['timestep'].append(timestamp)
+        log_data['m1'].append(data['motor.m1'])
+        log_data['m2'].append(data['motor.m2'])
+        log_data['m3'].append(data['motor.m3'])
+        log_data['m4'].append(data['motor.m4'])
+
+    # Start logging
+    cf.log.add_config(lg)
+    lg.data_received_cb.add_callback(_log_motor_data)
+    lg.start()
+
+    try:
+        # Ramp motors
+        while pwm <= end_pwm:
+            for idx in motor_idxs:
+                motor_pwms[idx] = pwm
+            send_motor_pwm(cf, motor_pwms, hold_time)
+            pwm += step
+
+    finally:
+
+        lg.stop()
+        cf_stop(cf)
+
+    # Convert to numpy arrays
+    for k in log_data:
+        log_data[k] = np.array(log_data[k])
+
+    return log_data
 
 def set_cf_params(scf):
     """ 
@@ -167,33 +166,3 @@ def set_cf_params(scf):
     cf.param.set_value('motorPowerSet.enable', '1')  # Enable motor power set control (open loop commands)
 
     return 
-
-if __name__=="__main__":
-
-    # uri = "usb://0"
-    uri = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E7B3')
-
-    # test_cf_connection(uri)
-    # test_tyto_connection(COM_PORT="COM3", baud_rate=115200)
-
-    print("Initializing drivers...")
-    init_drivers()
-    print("Drivers initialized!")
-
-    try:
-        print("Running...")
-        with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
-
-            set_cf_params(scf)
-            set_up_logging(scf)
-
-            print("Ramping motors...")
-            ramp_motors(scf.cf, start_pwm=15000, end_pwm=30000, step=2000, hold_time=1.0)
-
-            print("Closing link...")
-            scf.cf.close_link()
-
-    except KeyboardInterrupt:
-        print("Keyboard interrupt detected, stopping motors and closing...")
-        cf_stop(scf.cf)
-        scf.cf.close_link()
