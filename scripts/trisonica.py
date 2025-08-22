@@ -44,10 +44,10 @@ def live_plot(port="COM7", baudrate=115200, history=500):
     ax_polar = fig.add_subplot(gs[:, 1], polar=True)
 
     # Initialize lines
-    line_u, = ax_u.plot([], [], "r-")
-    line_v, = ax_v.plot([], [], "g-")
-    line_w, = ax_w.plot([], [], "b-")
-    line_s, = ax_s.plot([], [], "k-")
+    line_u, = ax_u.plot([], [], "r-", linewidth=3)
+    line_v, = ax_v.plot([], [], "g-", linewidth=3)
+    line_w, = ax_w.plot([], [], "b-", linewidth=3)
+    line_s, = ax_s.plot([], [], "k-", linewidth=3)
 
     # Initialize text objects in top-left corner
     txt_u = ax_u.text(0.02, 0.9, "", transform=ax_u.transAxes, color="r", fontsize=10, va='top')
@@ -63,7 +63,6 @@ def live_plot(port="COM7", baudrate=115200, history=500):
         ax.set_title(lbl)
 
     ax_polar.set_theta_zero_location("E")
-    ax_polar.set_theta_direction(-1)
     ax_polar.set_rlim(0, 10)
 
     arrow = ax_polar.arrow(0, 0, 0, 0, width=0.02)  # initial arrow
