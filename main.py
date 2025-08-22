@@ -17,9 +17,6 @@ uri = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E7B1')
 current_datetime = time.strftime("%Y-%m-%d_%H-%M-%S")
 output_path = os.path.join(os.path.dirname(__file__), 'data', 'cf_data', 'rampup_data_'+current_datetime+'.csv')
 
-# test_cf_connection(uri)
-# test_tyto_connection(COM_PORT="COM3", baud_rate=115200)
-
 print("Initializing drivers...")
 init_drivers()
 print("Drivers initialized!")
